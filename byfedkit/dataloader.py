@@ -2,8 +2,8 @@ import torch
 from torchvision import datasets, transforms
 import numpy as np
 
-MNIST_PATH = '../data/mnist/'
-CIFAR10_PATH = '../data/cifar10/'
+MNIST_PATH = 'data/mnist/'
+CIFAR10_PATH = 'data/cifar10/'
 trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 trans_cifar10_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
                                           transforms.RandomHorizontalFlip(),
@@ -40,8 +40,9 @@ def _index_dict(dataset):
     """
     get {index: [labels]} dict of a dataset
     the key is a certain label of the dataset, the value is the index list of this label in the dataset
-    like:
-    {1:[1,3,4], 2:[2,5,7],...}
+
+    example:
+        {1:[1,3,4], 2:[2,5,7],...}
 
     :param dataset: given dataset
     :return: index->label dict
@@ -57,6 +58,17 @@ def _index_dict(dataset):
 
 
 def _index2shards(index_dict, shard_num):
+    """
+    switch the index dict to shards
+    split each index array to multiple arrays, and join them into a whole one
+
+    example:
+        {1:[1,3,4,8], 2:[2,5,7,9]...} -> [[1,3],[4,8],[2,5],[7,9]]
+
+    :param index_dict: index dict to switch
+    :param shard_num: how many shard should one index array be divided
+    :return: final list of shards
+    """
     shards = []
     for k in sorted(index_dict.keys()):
         index_k = np.array(index_dict[k])
@@ -68,6 +80,15 @@ def _index2shards(index_dict, shard_num):
 
 
 def _iid_index(client_num, class_num, dataset_train, dataset_test):
+    """
+    get training index and test index under IID setting, where all clients get index containing all labels
+
+    :param client_num: client num
+    :param class_num: how many classes the dataset contains
+    :param dataset_train: training dataset
+    :param dataset_test: test dataset
+    :return: training index & test index
+    """
     shard_num = client_num
 
     index_dict_train = _index_dict(dataset_train)
@@ -99,12 +120,11 @@ def load_mnist_index_iid(client_num, class_num):
 
 def load_mnist_full_iid(client_num, class_num):
     dataset_train, dataset_test = _dataset('mnist')
-    return dataset_train, \
-        dataset_test, \
-        _iid_index(client_num=client_num,
-                   class_num=class_num,
-                   dataset_train=dataset_train,
-                   dataset_test=dataset_test)
+    index_train, index_test = _iid_index(client_num=client_num,
+                                         class_num=class_num,
+                                         dataset_train=dataset_train,
+                                         dataset_test=dataset_test)
+    return dataset_train, dataset_test, index_train, index_test
 
 
 def load_cifar_index_iid(client_num, class_num):
@@ -117,12 +137,11 @@ def load_cifar_index_iid(client_num, class_num):
 
 def load_cifar10_full_iid(client_num, class_num):
     dataset_train, dataset_test = _dataset('cifar10')
-    return dataset_train, \
-        dataset_test, \
-        _iid_index(client_num=client_num,
-                   class_num=class_num,
-                   dataset_train=dataset_train,
-                   dataset_test=dataset_test)
+    index_train, index_test = _iid_index(client_num=client_num,
+                                         class_num=class_num,
+                                         dataset_train=dataset_train,
+                                         dataset_test=dataset_test)
+    return dataset_train, dataset_test, index_train, index_test
 
 
 def load_mnist_index(client_num, class_per_client, class_num):
@@ -184,8 +203,3 @@ def load_mnist_index(client_num, class_per_client, class_num):
         finals_test[client_id].extend(shards_test[s])
 
     return finals_train, finals_test
-
-def load_mnist_full(client_num, class_per_client):
-    pass
-
-load_mnist_full_iid(10, 10)
