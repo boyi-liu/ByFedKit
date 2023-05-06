@@ -4,6 +4,10 @@ import numpy as np
 
 MNIST_PATH = 'data/mnist/'
 CIFAR10_PATH = 'data/cifar10/'
+
+MNIST = 'mnist'
+CIFAR10 = 'cifar10'
+
 trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 trans_cifar10_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
                                           transforms.RandomHorizontalFlip(),
@@ -25,10 +29,10 @@ def _dataset(dataset):
     :param dataset: indicator of dataset
     :return: true dataset
     """
-    if dataset == 'mnist':
+    if dataset == MNIST:
         return datasets.MNIST(MNIST_PATH, train=True, download=True, transform=trans_mnist), \
             datasets.MNIST(MNIST_PATH, train=False, download=True, transform=trans_mnist)
-    elif dataset == 'cifar10':
+    elif dataset == CIFAR10:
         return datasets.CIFAR10(CIFAR10_PATH, train=True, download=True, transform=trans_cifar10_train), \
             datasets.CIFAR10(CIFAR10_PATH, train=False, download=True, transform=trans_cifar10_val)
     else:
@@ -111,7 +115,7 @@ def _iid_index(client_num, class_num, dataset_train, dataset_test):
 
 
 def load_mnist_index_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset('mnist')
+    dataset_train, dataset_test = _dataset(MNIST)
     return _iid_index(client_num=client_num,
                       class_num=class_num,
                       dataset_train=dataset_train,
@@ -119,7 +123,7 @@ def load_mnist_index_iid(client_num, class_num):
 
 
 def load_mnist_full_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset('mnist')
+    dataset_train, dataset_test = _dataset(MNIST)
     index_train, index_test = _iid_index(client_num=client_num,
                                          class_num=class_num,
                                          dataset_train=dataset_train,
@@ -128,7 +132,7 @@ def load_mnist_full_iid(client_num, class_num):
 
 
 def load_cifar_index_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset('cifar10')
+    dataset_train, dataset_test = _dataset(CIFAR10)
     return _iid_index(client_num=client_num,
                       class_num=class_num,
                       dataset_train=dataset_train,
@@ -136,7 +140,7 @@ def load_cifar_index_iid(client_num, class_num):
 
 
 def load_cifar10_full_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset('cifar10')
+    dataset_train, dataset_test = _dataset(CIFAR10)
     index_train, index_test = _iid_index(client_num=client_num,
                                          class_num=class_num,
                                          dataset_train=dataset_train,
@@ -145,7 +149,7 @@ def load_cifar10_full_iid(client_num, class_num):
 
 
 def load_cifar10_full_dirichlet(client_num, class_num, alpha=0.1):
-    dataset_train, dataset_test = _dataset('mnist')
+    dataset_train, dataset_test = _dataset(CIFAR10)
     dirichlet_pdf = np.random.dirichlet([alpha/class_num]*class_num, client_num)
 
     index_dict_train = _index_dict(dataset_train)
