@@ -144,6 +144,41 @@ def load_cifar10_full_iid(client_num, class_num):
     return dataset_train, dataset_test, index_train, index_test
 
 
+def load_cifar10_full_dirichlet(client_num, class_num, alpha=0.1):
+    dataset_train, dataset_test = _dataset('mnist')
+    dirichlet_pdf = np.random.dirichlet([alpha/class_num]*class_num, client_num)
+
+    index_dict_train = _index_dict(dataset_train)
+    index_dict_test = _index_dict(dataset_test)
+
+    shard_num_train = len(dataset_train) // client_num
+    shard_num_test = len(dataset_test) // client_num
+
+    # === training dataset ===
+    index_train_final = []
+    for i in np.arange(client_num):
+        _index_train = []
+        local_dirichlet_pdf = dirichlet_pdf[i]
+        local_pdf = np.floor(local_dirichlet_pdf*shard_num_train)
+        for k in sorted(index_dict_train.keys()):
+            index_k = np.array(index_dict_train[k])
+            np.random.shuffle(index_k)
+            _index_train.extend(index_k[:int(local_pdf[k])])
+        index_train_final.append(_index_train)
+    # === test dataset ===
+    index_test_final = []
+    for i in np.arange(client_num):
+        _index_test = []
+        local_dirichlet_pdf = dirichlet_pdf[i]
+        local_pdf = np.floor(local_dirichlet_pdf * shard_num_test)
+        for k in sorted(index_dict_test.keys()):
+            index_k = np.array(index_dict_test[k])
+            np.random.shuffle(index_k)
+            _index_test.extend(index_k[:int(local_pdf[k])])
+        index_test_final.append(_index_test)
+    return dataset_train, dataset_test, index_train_final, index_test_final
+
+
 def load_mnist_index(client_num, class_per_client, class_num):
     """
     load random index of mnist, not the actual dataset
@@ -203,3 +238,7 @@ def load_mnist_index(client_num, class_per_client, class_num):
         finals_test[client_id].extend(shards_test[s])
 
     return finals_train, finals_test
+
+
+if __name__ == '__main__':
+    load_cifar10_full_dirichlet(10, 10, 0.1)
