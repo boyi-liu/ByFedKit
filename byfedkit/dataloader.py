@@ -1,5 +1,6 @@
 import torch
 from torchvision import datasets, transforms
+from torch.utils.data import Subset
 import numpy as np
 
 MNIST_PATH = 'data/mnist/'
@@ -29,12 +30,15 @@ def _dataset(dataset):
     :param dataset: indicator of dataset
     :return: true dataset
     """
+    ret_dict = dict()
     if dataset == MNIST:
-        return datasets.MNIST(MNIST_PATH, train=True, download=True, transform=trans_mnist), \
-            datasets.MNIST(MNIST_PATH, train=False, download=True, transform=trans_mnist)
+        ret_dict['train'] = datasets.MNIST(MNIST_PATH, train=True, download=True, transform=trans_mnist)
+        ret_dict['test'] = datasets.MNIST(MNIST_PATH, train=False, download=True, transform=trans_mnist)
+        return ret_dict
     elif dataset == CIFAR10:
-        return datasets.CIFAR10(CIFAR10_PATH, train=True, download=True, transform=trans_cifar10_train), \
-            datasets.CIFAR10(CIFAR10_PATH, train=False, download=True, transform=trans_cifar10_val)
+        ret_dict['train'] = datasets.CIFAR10(CIFAR10_PATH, train=True, download=True, transform=trans_cifar10_train)
+        ret_dict['test'] = datasets.CIFAR10(CIFAR10_PATH, train=False, download=True, transform=trans_cifar10_val)
+        return ret_dict
     else:
         print('wrong dataset')
         exit(-1)
@@ -83,16 +87,18 @@ def _index2shards(index_dict, shard_num):
     return shards
 
 
-def _iid_index(client_num, class_num, dataset_train, dataset_test):
+def _iid_index(client_num, class_num, dataset):
     """
     get training index and test index under IID setting, where all clients get index containing all labels
 
     :param client_num: client num
     :param class_num: how many classes the dataset contains
-    :param dataset_train: training dataset
-    :param dataset_test: test dataset
+    :param dataset: dataset dict, consist of train & test
     :return: training index & test index
     """
+    dataset_train = dataset['train']
+    dataset_test = dataset['test']
+
     shard_num = client_num
 
     index_dict_train = _index_dict(dataset_train)
@@ -115,41 +121,41 @@ def _iid_index(client_num, class_num, dataset_train, dataset_test):
 
 
 def load_mnist_index_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset(MNIST)
+    dataset = _dataset(MNIST)
     return _iid_index(client_num=client_num,
                       class_num=class_num,
-                      dataset_train=dataset_train,
-                      dataset_test=dataset_test)
+                      dataset=dataset)
 
 
-def load_mnist_full_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset(MNIST)
+def load_mnist_iid(client_num, class_num):
+    dataset = _dataset(MNIST)
     index_train, index_test = _iid_index(client_num=client_num,
                                          class_num=class_num,
-                                         dataset_train=dataset_train,
-                                         dataset_test=dataset_test)
-    return dataset_train, dataset_test, index_train, index_test
+                                         dataset=dataset)
+    return dataset['train'], dataset['test'], index_train, index_test
 
 
 def load_cifar_index_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset(CIFAR10)
+    dataset = _dataset(CIFAR10)
     return _iid_index(client_num=client_num,
                       class_num=class_num,
-                      dataset_train=dataset_train,
-                      dataset_test=dataset_test)
+                      dataset=dataset)
 
 
-def load_cifar10_full_iid(client_num, class_num):
-    dataset_train, dataset_test = _dataset(CIFAR10)
+def load_cifar10_iid(client_num, class_num):
+    dataset = _dataset(CIFAR10)
     index_train, index_test = _iid_index(client_num=client_num,
                                          class_num=class_num,
-                                         dataset_train=dataset_train,
-                                         dataset_test=dataset_test)
-    return dataset_train, dataset_test, index_train, index_test
+                                         dataset=dataset)
+    return dataset['train'], dataset['test'], index_train, index_test
 
 
 def load_cifar10_full_dirichlet(client_num, class_num, alpha=0.1):
-    dataset_train, dataset_test = _dataset(CIFAR10)
+    dataset = _dataset(CIFAR10)
+
+    dataset_train = dataset['train']
+    dataset_test = dataset['test']
+
     dirichlet_pdf = np.random.dirichlet([alpha/class_num]*class_num, client_num)
 
     index_dict_train = _index_dict(dataset_train)
