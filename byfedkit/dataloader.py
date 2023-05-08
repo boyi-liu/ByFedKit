@@ -202,6 +202,7 @@ def load_cifar10_dirichlet(client_num, alpha=0.1):
     return dataset['train'], dataset['test'], index_train, index_test
 
 
+
 def load_mnist_index(client_num, class_per_client, class_num):
     """
     load random index of mnist, not the actual dataset
