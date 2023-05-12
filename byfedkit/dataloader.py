@@ -178,26 +178,21 @@ def _imbalance_class_index(client_num, dataset, class_per_client):
     class_num = len(index_dict_train.keys())
     shard_num = class_per_client * client_num // class_num
 
-    train_shard_list = []
-    test_shard_list = []
+    shards_train = _index2shards(index_dict=index_dict_train, shard_num=shard_num)
+    shards_test = _index2shards(index_dict=index_dict_test, shard_num=shard_num)
 
-    # === training dataset ===
-    for k in sorted(index_dict_train.keys()):
-        index_k = np.array(index_dict_train[k])
-        np.random.shuffle(index_k)
+    select_list = np.arange(client_num*class_per_client)
+    np.random.shuffle(select_list)
 
-        chunks = np.array_split(index_k, shard_num)
+    finals_train = [[] for _ in range(client_num)]
+    finals_test = [[] for _ in range(client_num)]
 
-        for c in chunks:
-            train_shard_list.append(c)
+    for ind, s in enumerate(select_list):
+        client_id = ind % client_num
+        finals_train[client_id].extend(shards_train[s])
+        finals_test[client_id].extend(shards_test[s])
 
-    for k in sorted(index_dict_test.keys()):
-        index_list = np.array(index_dict_test[k])
-        np.random.shuffle(index_list)
-        chunks = np.array_split(index_list, shard_num)
-
-        for c in chunks:
-            test_shard_list.append(c)
+    return finals_train, finals_test
 
 
 def load_mnist_index_iid(client_num):
@@ -231,6 +226,14 @@ def load_cifar10_dirichlet(client_num, alpha=0.1):
     index_train, index_test = _dirichlet_index(client_num=client_num,
                                                dataset=dataset,
                                                alpha=alpha)
+    return dataset['train'], dataset['test'], index_train, index_test
+
+
+def load_cifar10_class_imbalance(client_num, class_num):
+    dataset = _dataset(CIFAR10)
+    index_train, index_test = _imbalance_class_index(client_num=client_num,
+                                                     dataset=dataset,
+                                                     class_per_client=class_num)
     return dataset['train'], dataset['test'], index_train, index_test
 
 
@@ -296,4 +299,4 @@ def load_mnist_index(client_num, class_per_client, class_num):
 
 
 if __name__ == '__main__':
-    exit(0)
+    _imbalance_class_index(10, )
