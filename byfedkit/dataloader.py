@@ -168,6 +168,38 @@ def _dirichlet_index(client_num, dataset, alpha):
     return index_train_final, index_test_final
 
 
+def _imbalance_class_index(client_num, dataset, class_per_client):
+    dataset_train = dataset['train']
+    dataset_test = dataset['test']
+
+    index_dict_train = _index_dict(dataset_train)
+    index_dict_test = _index_dict(dataset_test)
+
+    class_num = len(index_dict_train.keys())
+    shard_num = class_per_client * client_num // class_num
+
+    train_shard_list = []
+    test_shard_list = []
+
+    # === training dataset ===
+    for k in sorted(index_dict_train.keys()):
+        index_k = np.array(index_dict_train[k])
+        np.random.shuffle(index_k)
+
+        chunks = np.array_split(index_k, shard_num)
+
+        for c in chunks:
+            train_shard_list.append(c)
+
+    for k in sorted(index_dict_test.keys()):
+        index_list = np.array(index_dict_test[k])
+        np.random.shuffle(index_list)
+        chunks = np.array_split(index_list, shard_num)
+
+        for c in chunks:
+            test_shard_list.append(c)
+
+
 def load_mnist_index_iid(client_num):
     dataset = _dataset(MNIST)
     return _iid_index(client_num=client_num,
@@ -200,7 +232,6 @@ def load_cifar10_dirichlet(client_num, alpha=0.1):
                                                dataset=dataset,
                                                alpha=alpha)
     return dataset['train'], dataset['test'], index_train, index_test
-
 
 
 def load_mnist_index(client_num, class_per_client, class_num):
@@ -265,4 +296,4 @@ def load_mnist_index(client_num, class_per_client, class_num):
 
 
 if __name__ == '__main__':
-    load_cifar10_full_dirichlet(10, 10, 0.1)
+    exit(0)
